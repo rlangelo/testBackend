@@ -23,6 +23,19 @@ export const handler = async (event) => {
   await initializePool(); // Ensure the pool is initialized before the query
 
   try {
+
+    // Handle CORS Preflight Request
+    if (event.httpMethod === "OPTIONS") {
+      return {
+        statusCode: 200,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "OPTIONS, POST, GET",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+        body: JSON.stringify({ success: true, message: "CORS preflight success" }),
+      };
+    }
   
     // Determine which endpoint is being called
     const path = event.rawPath || event.path;
@@ -57,6 +70,7 @@ export const handler = async (event) => {
         headers: {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "POST",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
         },
         body: JSON.stringify({ success: true, uploadUrl: signedUrl }),
       };
@@ -68,7 +82,7 @@ export const handler = async (event) => {
       headers: { "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({ success: false, error: "Endpoint not found" }),
     };
-    
+
   } catch (error) {
     return {
       statusCode: 500,
