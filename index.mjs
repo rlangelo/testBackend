@@ -1,27 +1,39 @@
-import express from 'express';
+let pool;
 
-const pool = await import('pg').then(pg => {
-  const { Pool } = pg.default;
-  return new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: 5432,
-    ssl: { rejectUnauthorized: false },
-  });
-});
+const initializePool = async () => {
+  if (!pool) {
+    const { Pool } = (await import('pg')).default;
+    pool = new Pool({
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
+      password: process.env.DB_PASSWORD,
+      port: 5432,
+      ssl: { rejectUnauthorized: false },
+    });
+  }
+};
 
 export const handler = async (event) => {
+  await initializePool(); // Ensure the pool is initialized before the query
+
   try {
-    const result = await pool.query('SELECT NOW()');
+    // Test database connection by running a simple query
+    const result = await pool.query("SELECT * FROM test_data LIMIT 10");
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, timestamp: result.rows[0].now }),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET",
+      },
+      body: JSON.stringify({ success: true, data: result.rows }),
     };
   } catch (error) {
     return {
       statusCode: 500,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
       body: JSON.stringify({ success: false, error: error.message }),
     };
   }
